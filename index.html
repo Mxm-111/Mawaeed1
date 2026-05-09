@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0c0c0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="مواعيدي">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>مواعيدي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0c0c0f;
+            --surface: #16161a;
+            --surface2: #1f1f26;
+            --surface3: #28282f;
+            --border: #2c2c35;
+            --border-light: #38383f;
+            --text: #f2f2f5;
+            --text-sec: #9898a8;
+            --text-dim: #5c5c70;
+            --accent: #e8d5b0;
+            --accent-dim: #b0956a;
+            --red: #ff4f5e;
+            --orange: #ff9f43;
+            --blue: #6eb5ff;
+            --green: #4ecba0;
+            --r-sm: 14px;
+            --r-md: 18px;
+            --r-lg: 24px;
+            --r-xl: 32px;
+            --font: 'IBM Plex Sans Arabic', sans-serif;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0; padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+        }
+
+        html, body {
+            width: 100%; height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 16px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #app {
+            width: 100%;
+            height: 100%;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* HEADER */
+        .header {
+            padding: calc(var(--safe-top) + 18px) 20px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-shrink: 0;
+            background: var(--bg);
+            position: relative;
+            z-index: 10;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 1px;
+            background: var(--border);
+        }
+        .header-title {
+            font-size: 30px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.1;
+            letter-spacing: -0.5px;
+        }
+        .header-subtitle {
+            font-size: 13px;
+            color: var(--text-dim);
+            margin-top: 5px;
+            font-weight: 400;
+        }
+        .btn-add {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: #000;
+            font-size: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.12s, opacity 0.12s;
+            flex-shrink: 0;
+            margin-top: 2px;
+            padding-bottom: 2px;
+        }
+        .btn-add:active { transform: scale(0.88); opacity: 0.75; }
+
+        /* STATUS BAR */
+        .status-bar {
+            margin: 12px 16px 0;
+            padding: 14px 16px;
+            border-radius: var(--r-md);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--text-sec);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.15s;
+            min-height: 52px;
+        }
+        .status-bar:active { background: var(--surface2); }
+        .status-left { display: flex; align-items: center; gap: 10px; }
+        .status-icon { font-size: 18px; }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--text-dim);
+            flex-shrink: 0;
+        }
+        .status-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .status-dot.warn   { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+
+        /* SCROLL LIST */
+        .list-scroll {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 16px calc(var(--safe-bottom) + 24px);
+            overscroll-behavior: contain;
+        }
+        .list-scroll::-webkit-scrollbar { display: none; }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 24px 40px;
+            color: var(--text-dim);
+        }
+        .empty-icon { font-size: 60px; margin-bottom: 18px; opacity: 0.4; }
+        .empty-text { font-size: 16px; font-weight: 400; line-height: 1.7; }
+
+        .section-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 1.5px;
+            padding: 18px 4px 10px;
+        }
+
+        /* APPOINTMENT CARD */
+        .appt-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 14px;
+            background: var(--surface);
+            border-radius: var(--r-md);
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            transition: opacity 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+            min-height: 82px;
+        }
+        .appt-card::before {
+            content: '';
+            position: absolute;
+            right: 0; top: 14px; bottom: 14px;
+            width: 3px;
+            border-radius: 2px;
+            background: var(--border-light);
+        }
+        .appt-card.past { opacity: 0.28; }
+        .appt-card.ringing { border-color: var(--red); animation: ring-pulse 0.65s infinite alternate; }
+        .appt-card.ringing::before { background: var(--red); }
+        .appt-card.soon { border-color: rgba(255,159,67,0.35); }
+        .appt-card.soon::before { background: var(--orange); }
+        @keyframes ring-pulse {
+            from { box-shadow: 0 0 0 0 rgba(255,79,94,0.3); }
+            to   { box-shadow: 0 0 0 12px rgba(255,79,94,0); }
+        }
+
+        /* BADGE */
+        .badge {
+            width: 62px; height: 62px;
+            border-radius: var(--r-sm);
+            border: 1.5px solid var(--border-light);
+            background: var(--surface2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .badge-main { font-size: 22px; font-weight: 700; line-height: 1; }
+        .badge-sub  { font-size: 10px; color: var(--text-dim); margin-top: 3px; font-weight: 500; }
+
+        /* CARD BODY */
+        .appt-body { flex: 1; min-width: 0; cursor: pointer; padding: 2px 0; }
+        .appt-title {
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+        .appt-meta { font-size: 13px; color: var(--text-sec); font-weight: 400; }
+        .appt-note-preview {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* CARD ACTIONS */
+        .appt-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+        .btn-icon {
+            width: 40px; height: 40px;
+            border-radius: var(--r-sm);
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text-sec);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .btn-icon:active { background: var(--surface3); }
+        .btn-icon.done { border-color: var(--green); color: var(--green); background: rgba(78,203,160,0.08); }
+        .btn-icon.delete:active { border-color: var(--red); color: var(--red); }
+
+        /* RINGING OVERLAY */
+        .ringing-overlay {
+            position: fixed; inset: 0;
+            background: rgba(12,12,15,0.97);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 24px calc(var(--safe-bottom) + 32px);
+            backdrop-filter: blur(24px);
+        }
+        .ringing-pulse {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: rgba(255,79,94,0.1);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 28px;
+            animation: pulse-anim 1.4s ease-in-out infinite;
+            position: relative;
+        }
+        .ringing-pulse::before {
+            content: '';
+            position: absolute; inset: -16px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,79,94,0.18);
+            animation: pulse-anim 1.4s ease-in-out infinite 0.35s;
+        }
+        @keyframes pulse-anim {
+            0%,100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
+        }
+        .ringing-icon { font-size: 54px; animation: shake 0.5s infinite; }
+        @keyframes shake {
+            0%,100% { transform: rotate(-10deg); }
+            50%      { transform: rotate(10deg); }
+        }
+        .ringing-label {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            color: var(--red);
+            margin-bottom: 12px;
+        }
+        .ringing-title { font-size: 28px; font-weight: 700; color: #fff; text-align: center; margin-bottom: 10px; line-height: 1.3; }
+        .ringing-time  { font-size: 16px; color: var(--text-sec); margin-bottom: 48px; }
+        .btn-dismiss {
+            width: 100%; padding: 20px;
+            border-radius: var(--r-xl);
+            background: var(--red); border: none;
+            color: #fff; font-size: 18px; font-weight: 700;
+            cursor: pointer; font-family: var(--font);
+            margin-bottom: 12px;
+            transition: opacity 0.15s;
+        }
+        .btn-dismiss:active { opacity: 0.8; }
+        .btn-snooze {
+            width: 100%; padding: 18px;
+            border-radius: var(--r-xl);
+            background: var(--surface2);
+            border: 1px solid var(--border-light);
+            color: var(--text-sec); font-size: 16px;
+            cursor: pointer; font-family: var(--font);
+            transition: background 0.15s;
+        }
+        .btn-snooze:active { background: var(--surface3); }
+
+        /* BOTTOM SHEET */
+        .sheet-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 1000;
+            display: flex; align-items: flex-end;
+            backdrop-filter: blur(10px);
+        }
+        .sheet {
+            width: 100%;
+            background: var(--surface);
+            border-radius: var(--r-xl) var(--r-xl) 0 0;
+            padding: 12px 20px calc(var(--safe-bottom) + 28px);
+            border: 1px solid var(--border-light);
+            border-bottom: none;
+            animation: slide-up 0.28s cubic-bezier(0.22,1,0.36,1);
+        }
+        @keyframes slide-up {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+        .sheet-handle {
+            width: 40px; height: 5px;
+            background: var(--border-light);
+            border-radius: 3px;
+            margin: 0 auto 20px;
+        }
+        .sheet-title { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+
+        /* INPUTS */
+        .field-label {
+            font-size: 13px; font-weight: 600;
+            color: var(--text-sec);
+            margin-bottom: 8px;
+        }
+        .input-field {
+            width: 100%;
+            background: var(--surface2);
+            border: 1.5px solid var(--border);
+            border-radius: var(--r-sm);
+            color: var(--text);
+            padding: 16px;
+            font-size: 17px;
+            font-family: var(--font);
+            margin-bottom: 18px;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+            color-scheme: dark;
+            min-height: 56px;
+        }
+        .input-field:focus { border-color: var(--accent-dim); }
+        .row-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .row-inputs .input-field { margin-bottom: 18px; }
+        .btn-primary {
+            width: 100%; padding: 19px;
+            border-radius: var(--r-lg);
+            border: none;
+            background: var(--accent);
+            color: #0c0c0f;
+            font-size: 17px; font-weight: 700;
+            cursor: pointer; font-family: var(--font);
+            margin-top: 4px;
+            transition: opacity 0.15s;
+            min-height: 60px;
+        }
+        .btn-primary:active { opacity: 0.8; }
+
+        /* NOTES VIEW */
+        .notes-view {
+            position: fixed; inset: 0;
+            background: var(--bg);
+            z-index: 1500;
+            display: flex; flex-direction: column;
+            animation: slide-in 0.22s ease;
+        }
+        @keyframes slide-in {
+            from { transform: translateX(-24px); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
+        }
+        .notes-header {
+            padding: calc(var(--safe-top) + 16px) 20px 16px;
+            display: flex; align-items: center; gap: 14px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .btn-back {
+            background: var(--surface2);
+            border: 1px solid var(--border-light);
+            color: var(--text-sec);
+            border-radius: var(--r-sm);
+            padding: 10px 18px;
+            font-size: 15px;
+            cursor: pointer; font-family: var(--font);
+            min-height: 44px; white-space: nowrap;
+        }
+        .btn-back:active { background: var(--surface3); }
+        .notes-title { font-size: 17px; font-weight: 600; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .notes-meta  { font-size: 14px; color: var(--text-dim); padding: 14px 20px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+        textarea.note-area {
+            flex: 1;
+            background: transparent; border: none;
+            color: var(--text);
+            padding: 18px 20px;
+            font-size: 17px; font-family: var(--font);
+            resize: none; outline: none;
+            line-height: 1.8; font-weight: 400;
+        }
+
+        /* COLOR CLASSES */
+        .color-now    { color: var(--red); }
+        .color-urgent { color: var(--orange); }
+        .color-soon   { color: var(--blue); }
+        .color-future { color: var(--text); }
+        .color-past   { color: var(--text-dim); }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="root"></div>
+</div>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW failed:', e));
+}
+
+const KEY = 'maweid_v4';
+const SNOOZE_MIN = 5;
+
+let appts = [], view = 'list', selectedId = null, noteText = '';
+let ringingAppt = null, alarmAudioCtx = null, alarmInterval = null;
+let notifGranted = false, swReady = false;
+
+function load() { try { appts = JSON.parse(localStorage.getItem(KEY)) || []; } catch { appts = []; } }
+function save() { localStorage.setItem(KEY, JSON.stringify(appts)); }
+
+function parseTarget(d, t) { return new Date(`${d}T${t}:00`); }
+function getCountdown(d, t) {
+    const diff = parseTarget(d, t) - Date.now(), abs = Math.abs(diff);
+    return { diff, mins: Math.floor(abs/60000), hrs: Math.floor(abs/3600000), days: Math.floor(abs/86400000), isPast: diff < 0 };
+}
+function formatDate(dateStr) {
+    return new Date(dateStr + 'T00:00:00').toLocaleDateString('ar-SA', { weekday:'short', month:'long', day:'numeric' });
+}
+function getBadge(d, t) {
+    const { diff, mins, hrs, days, isPast } = getCountdown(d, t);
+    if (!isPast && mins === 0) return { main:'الآن', sub:'', cls:'color-now', borderColor:'var(--red)' };
+    if (!isPast && mins <= 15) return { main:mins, sub:'دقيقة', cls:'color-urgent', borderColor:'var(--orange)' };
+    if (!isPast && hrs < 1)   return { main:mins, sub:'دقيقة', cls:'color-soon',   borderColor:'var(--blue)' };
+    if (!isPast && days < 1)  return { main:hrs,  sub:'ساعة',  cls:'color-soon',   borderColor:'var(--blue)' };
+    if (!isPast)              return { main:days, sub:'يوم',   cls:'color-future', borderColor:'var(--border-light)' };
+    return { main:days||hrs||mins, sub:days?'يوم':hrs?'ساعة':'دقيقة', cls:'color-past', borderColor:'var(--text-dim)' };
+}
+
+function startAlarm() { stopAlarm(); playRingCycle(); alarmInterval = setInterval(playRingCycle, 3000); }
+function playRingCycle() {
+    try {
+        if (!alarmAudioCtx || alarmAudioCtx.state==='closed')
+            alarmAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (alarmAudioCtx.state==='suspended') alarmAudioCtx.resume();
+        const ctx = alarmAudioCtx, t = ctx.currentTime;
+        [0,0.4,0.8].forEach(off => {
+            const o = ctx.createOscillator(), g = ctx.createGain();
+            o.connect(g); g.connect(ctx.destination);
+            o.type = 'sine';
+            o.frequency.setValueAtTime(1200, t+off);
+            o.frequency.linearRampToValueAtTime(900, t+off+0.3);
+            g.gain.setValueAtTime(0, t+off);
+            g.gain.linearRampToValueAtTime(0.7, t+off+0.05);
+            g.gain.setValueAtTime(0.7, t+off+0.2);
+            g.gain.exponentialRampToValueAtTime(0.01, t+off+0.35);
+            o.start(t+off); o.stop(t+off+0.36);
+        });
+    } catch(e) {}
+}
+function stopAlarm() {
+    if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+    try { if (alarmAudioCtx) { alarmAudioCtx.close(); alarmAudioCtx = null; } } catch {}
+}
+function vibrate() { if (navigator.vibrate) navigator.vibrate([400,200,400,200,400,500,400,200,400]); }
+
+async function requestNotifPermission() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') { notifGranted = true; return true; }
+    const p = await Notification.requestPermission();
+    notifGranted = p === 'granted'; return notifGranted;
+}
+function sendNotif(title, body) {
+    if (notifGranted && 'Notification' in window)
+        new Notification('⏰ ' + title, { body, icon:'icon-192.png' });
+}
+function syncAlarmsToSW() {
+    if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
+    navigator.serviceWorker.controller.postMessage({
+        type: 'SYNC_ALARMS',
+        alarms: appts.filter(a => !a.checked).map(a => ({ id:a.id, title:a.title, date:a.date, time:a.time }))
+    });
+}
+navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'ALARM_TRIGGER') {
+        const a = appts.find(x => x.id === e.data.id);
+        if (a && !a.checked) triggerAlarm(a);
+    }
+});
+
+const notifiedSet = new Set();
+function checkAlarms() {
+    appts.forEach(appt => {
+        if (appt.checked) return;
+        const { diff } = getCountdown(appt.date, appt.time);
+        const key = appt.id + '-now';
+        if (diff >= 0 && diff < 60000 && !notifiedSet.has(key)) { notifiedSet.add(key); triggerAlarm(appt); }
+    });
+    renderApp();
+}
+function triggerAlarm(appt) {
+    ringingAppt = appt; startAlarm(); vibrate();
+    sendNotif(appt.title, formatDate(appt.date) + ' - ' + appt.time);
+    renderApp();
+}
+function dismissAlarm() { stopAlarm(); ringingAppt = null; renderApp(); }
+function snoozeAlarm() {
+    if (!ringingAppt) return;
+    stopAlarm(); const appt = ringingAppt; ringingAppt = null;
+    const s = new Date(Date.now() + SNOOZE_MIN * 60000);
+    const p = n => String(n).padStart(2,'0');
+    appts.push({ id:Date.now().toString(), title:'💤 '+appt.title,
+        date:`${s.getFullYear()}-${p(s.getMonth()+1)}-${p(s.getDate())}`,
+        time:`${p(s.getHours())}:${p(s.getMinutes())}`, notes:appt.notes||'', checked:false });
+    save(); syncAlarmsToSW(); renderApp();
+}
+
+function getSorted() {
+    return [...appts].sort((a,b) => {
+        if (a.checked !== b.checked) return a.checked ? 1 : -1;
+        return parseTarget(a.date, a.time) - parseTarget(b.date, b.time);
+    });
+}
+function addAppt(title, date, time) {
+    if (!title.trim() || !date || !time) return false;
+    appts.push({ id:Date.now().toString(), title:title.trim(), date, time, notes:'', checked:false });
+    save(); syncAlarmsToSW(); return true;
+}
+function toggleDone(id) { appts = appts.map(a => a.id===id ? {...a, checked:!a.checked} : a); save(); syncAlarmsToSW(); renderApp(); }
+function deleteAppt(id) { appts = appts.filter(a => a.id!==id); save(); syncAlarmsToSW(); renderApp(); }
+function saveNote(id, text) { appts = appts.map(a => a.id===id ? {...a, notes:text} : a); save(); }
+
+function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function nowTimeStr() {
+    const d = new Date(Date.now() + 60000);
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function renderApp() {
+    const root = document.getElementById('root');
+
+    if (ringingAppt) {
+        root.innerHTML = `
+        <div class="ringing-overlay">
+            <div class="ringing-pulse"><div class="ringing-icon">📳</div></div>
+            <div class="ringing-label">تنبيه الموعد</div>
+            <div class="ringing-title">${esc(ringingAppt.title)}</div>
+            <div class="ringing-time">${formatDate(ringingAppt.date)} · ${ringingAppt.time}</div>
+            <button class="btn-dismiss" onclick="dismissAlarm()">إيقاف الرنين</button>
+            <button class="btn-snooze" onclick="snoozeAlarm()">💤 تأجيل ${SNOOZE_MIN} دقائق</button>
+        </div>`;
+        return;
+    }
+
+    if (view === 'notes' && selectedId) {
+        const appt = appts.find(a => a.id === selectedId);
+        if (appt) {
+            root.innerHTML = `
+            <div class="notes-view">
+                <div class="notes-header">
+                    <button class="btn-back" onclick="saveNoteAndBack()">← حفظ</button>
+                    <div class="notes-title">${esc(appt.title)}</div>
+                </div>
+                <div class="notes-meta">${formatDate(appt.date)} · ${appt.time}</div>
+                <textarea class="note-area" id="noteArea" placeholder="أضف ملاحظاتك هنا...">${esc(noteText)}</textarea>
+            </div>`;
+            document.getElementById('noteArea').focus();
+            return;
+        }
+    }
+
+    const pending = appts.filter(a => !a.checked);
+    const upcoming15 = pending.filter(a => { const {diff}=getCountdown(a.date,a.time); return diff>=0&&diff<900000; });
+    const statusIcon = notifGranted ? '🔔' : '🔕';
+    const statusText = notifGranted
+        ? (upcoming15.length > 0 ? `${upcoming15.length} موعد خلال 15 دقيقة` : `${pending.length} موعد نشط · التنبيهات مفعّلة`)
+        : 'اضغط لتفعيل التنبيهات والصوت';
+    const dotClass = notifGranted ? (upcoming15.length > 0 ? 'warn' : 'active') : '';
+
+    const sorted   = getSorted();
+    const upcoming = sorted.filter(a => !a.checked);
+    const done     = sorted.filter(a => a.checked);
+
+    let listHTML = '';
+    if (!upcoming.length && !done.length) {
+        listHTML = `<div class="empty-state">
+            <div class="empty-icon">🗓️</div>
+            <div class="empty-text">لا توجد مواعيد بعد<br><span style="font-size:14px;opacity:0.5">اضغط + لإضافة موعد جديد</span></div>
+        </div>`;
+    } else {
+        if (upcoming.length) { listHTML += `<div class="section-label">القادمة</div>`; listHTML += upcoming.map(buildCard).join(''); }
+        if (done.length)     { listHTML += `<div class="section-label">المنجزة</div>`;  listHTML += done.map(buildCard).join(''); }
+    }
+
+    root.innerHTML = `
+    <div class="header">
+        <div>
+            <div class="header-title">مواعيدي</div>
+            <div class="header-subtitle">${new Date().toLocaleDateString('ar-SA',{weekday:'long',month:'long',day:'numeric'})}</div>
+        </div>
+        <button class="btn-add" onclick="openAdd()">+</button>
+    </div>
+    <div class="status-bar" onclick="onStatusClick()">
+        <div class="status-left">
+            <span class="status-icon">${statusIcon}</span>
+            <span>${statusText}</span>
+        </div>
+        <div class="status-dot ${dotClass}"></div>
+    </div>
+    <div class="list-scroll">${listHTML}</div>
+    ${view === 'add' ? buildAddSheet() : ''}`;
+
+    if (view === 'add') {
+        const f = document.getElementById('addForm');
+        if (f) f.addEventListener('keydown', e => { if (e.key==='Enter') submitAdd(); });
+    }
+}
+
+function buildCard(appt) {
+    const badge = getBadge(appt.date, appt.time);
+    const { diff } = getCountdown(appt.date, appt.time);
+    let cls = 'appt-card';
+    if (appt.checked) cls += ' past';
+    else if (diff>=0 && diff<60000)   cls += ' ringing';
+    else if (diff>=0 && diff<900000)  cls += ' soon';
+    const note = appt.notes ? `<div class="appt-note-preview">📝 ${esc(appt.notes)}</div>` : '';
+    return `
+    <div class="${cls}" id="card-${appt.id}">
+        <div class="badge" style="border-color:${badge.borderColor}">
+            <span class="badge-main ${badge.cls}">${badge.main}</span>
+            <span class="badge-sub">${badge.sub}</span>
+        </div>
+        <div class="appt-body" onclick="openNotes('${appt.id}')">
+            <div class="appt-title">${esc(appt.title)}</div>
+            <div class="appt-meta">${formatDate(appt.date)} · ${appt.time}</div>
+            ${note}
+        </div>
+        <div class="appt-actions">
+            <button class="btn-icon ${appt.checked?'done':''}" onclick="toggleDone('${appt.id}')">${appt.checked?'↩':'✓'}</button>
+            <button class="btn-icon delete" onclick="confirmDelete('${appt.id}')">✕</button>
+        </div>
+    </div>`;
+}
+
+function buildAddSheet() {
+    return `
+    <div class="sheet-overlay" onclick="closeAdd(event)">
+        <div class="sheet" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">موعد جديد</div>
+            <div id="addForm">
+                <div class="field-label">العنوان</div>
+                <input class="input-field" id="fi-title" placeholder="مثال: اجتماع العمل" autocomplete="off">
+                <div class="row-inputs">
+                    <div>
+                        <div class="field-label">التاريخ</div>
+                        <input class="input-field" id="fi-date" type="date" value="${todayStr()}" style="color-scheme:dark">
+                    </div>
+                    <div>
+                        <div class="field-label">الوقت</div>
+                        <input class="input-field" id="fi-time" type="time" value="${nowTimeStr()}" style="color-scheme:dark">
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="submitAdd()">إضافة الموعد</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function openAdd() { view='add'; renderApp(); setTimeout(()=>{const e=document.getElementById('fi-title');if(e)e.focus();},120); }
+function closeAdd(e) { view='list'; renderApp(); }
+function submitAdd() {
+    const title=(document.getElementById('fi-title')||{}).value||'';
+    const date=(document.getElementById('fi-date')||{}).value||'';
+    const time=(document.getElementById('fi-time')||{}).value||'';
+    if (addAppt(title,date,time)) { view='list'; renderApp(); }
+    else { const el=document.getElementById('fi-title'); if(el){el.focus();el.style.borderColor='var(--red)';} }
+}
+function openNotes(id) { selectedId=id; noteText=(appts.find(a=>a.id===id)||{}).notes||''; view='notes'; renderApp(); }
+function saveNoteAndBack() {
+    noteText=(document.getElementById('noteArea')||{}).value||noteText;
+    saveNote(selectedId,noteText); view='list'; selectedId=null; renderApp();
+}
+function confirmDelete(id) { if(confirm('حذف هذا الموعد؟')) deleteAppt(id); }
+async function onStatusClick() { if(!notifGranted) await requestNotifPermission(); playRingCycle(); renderApp(); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function init() {
+    load();
+    notifGranted = Notification && Notification.permission === 'granted';
+    if (!notifGranted) notifGranted = await requestNotifPermission();
+    renderApp();
+    setInterval(checkAlarms, 15000);
+    checkAlarms();
+    if (navigator.serviceWorker)
+        navigator.serviceWorker.ready.then(()=>{ swReady=true; syncAlarmsToSW(); });
+}
+init();
+</script>
+</body>
+</html>
