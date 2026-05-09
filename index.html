@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="مواعيدي">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>مواعيدي</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --surface: #141414;
+            --surface2: #1e1e1e;
+            --border: #2a2a2a;
+            --text: #f0f0f0;
+            --text-dim: #666;
+            --text-muted: #444;
+            --accent: #e8d5b7;
+            --accent-dim: #a89070;
+            --red: #ff5252;
+            --orange: #ff9f43;
+            --blue: #74b9ff;
+            --green: #55efc4;
+            --radius: 16px;
+            --font: 'IBM Plex Sans Arabic', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow-x: hidden;
+        }
+
+        #app {
+            max-width: 430px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            padding: 54px 24px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: linear-gradient(to bottom, var(--bg) 80%, transparent);
+        }
+
+        .header-title {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -1px;
+            color: var(--text);
+        }
+
+        .header-subtitle {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-top: 4px;
+            font-weight: 300;
+        }
+
+        .btn-add {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: none;
+            color: #000;
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s, opacity 0.15s;
+            flex-shrink: 0;
+        }
+        .btn-add:active { transform: scale(0.92); opacity: 0.8; }
+
+        /* ===== STATUS BAR ===== */
+        .status-bar {
+            margin: 0 16px 12px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .status-bar:active { background: var(--surface2); }
+        .status-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            margin-left: 8px;
+            flex-shrink: 0;
+        }
+        .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .status-dot.warn { background: var(--orange); }
+
+        /* ===== LIST ===== */
+        .list { flex: 1; padding: 0 16px 100px; }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+        .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+        .empty-text { font-size: 15px; font-weight: 300; }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 20px 4px 8px;
+        }
+
+        /* ===== APPOINTMENT CARD ===== */
+        .appt-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            transition: opacity 0.3s, transform 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+        .appt-card.past { opacity: 0.35; }
+        .appt-card.ringing { border-color: var(--red); animation: ring-pulse 0.6s infinite alternate; }
+        .appt-card.soon { border-color: var(--orange); }
+
+        @keyframes ring-pulse {
+            from { box-shadow: 0 0 0 0 rgba(255,82,82,0.4); }
+            to   { box-shadow: 0 0 0 10px rgba(255,82,82,0); }
+        }
+
+        /* ===== BADGE ===== */
+        .badge {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            border: 1.5px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: border-color 0.3s;
+        }
+        .badge-main { font-size: 20px; font-weight: 700; line-height: 1; }
+        .badge-sub  { font-size: 9px; color: var(--text-dim); margin-top: 2px; font-weight: 400; }
+
+        /* ===== CARD BODY ===== */
+        .appt-body { flex: 1; min-width: 0; cursor: pointer; }
+        .appt-title {
+            font-size: 15px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+        .appt-meta { font-size: 12px; color: var(--text-dim); font-weight: 300; }
+        .appt-note-preview {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ===== ACTIONS ===== */
+        .appt-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+        .btn-icon {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+        .btn-icon:active { background: var(--surface2); color: var(--text); }
+        .btn-icon.done { border-color: var(--green); color: var(--green); }
+        .btn-icon.delete { border-color: #333; }
+        .btn-icon.delete:active { border-color: var(--red); color: var(--red); }
+
+        /* ===== RINGING OVERLAY ===== */
+        .ringing-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            backdrop-filter: blur(20px);
+        }
+        .ringing-icon {
+            font-size: 72px;
+            animation: shake 0.5s infinite;
+        }
+        @keyframes shake {
+            0%,100% { transform: rotate(-8deg); }
+            50%      { transform: rotate(8deg); }
+        }
+        .ringing-title { font-size: 26px; font-weight: 700; color: #fff; text-align: center; }
+        .ringing-time  { font-size: 15px; color: var(--text-dim); }
+        .btn-dismiss {
+            margin-top: 20px;
+            padding: 16px 48px;
+            border-radius: 50px;
+            background: var(--red);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font);
+        }
+        .btn-snooze {
+            padding: 12px 32px;
+            border-radius: 50px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 14px;
+            cursor: pointer;
+            font-family: var(--font);
+        }
+
+        /* ===== MODAL / SHEET ===== */
+        .sheet-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 500;
+            display: flex;
+            align-items: flex-end;
+            backdrop-filter: blur(8px);
+        }
+        .sheet {
+            width: 100%;
+            max-width: 430px;
+            margin: 0 auto;
+            background: var(--surface);
+            border-radius: 28px 28px 0 0;
+            padding: 16px 24px 40px;
+            border: 1px solid var(--border);
+            border-bottom: none;
+            animation: slide-up 0.3s cubic-bezier(0.22,1,0.36,1);
+        }
+        @keyframes slide-up {
+            from { transform: translateY(100%); }
+            to   { transform: translateY(0); }
+        }
+        .sheet-handle {
+            width: 36px; height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+        .sheet-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text);
+        }
+
+        /* ===== INPUTS ===== */
+        .field-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+        }
+        .input-field {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            padding: 14px 16px;
+            font-size: 15px;
+            font-family: var(--font);
+            margin-bottom: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            -webkit-appearance: none;
+            colorScheme: dark;
+        }
+        .input-field:focus { border-color: var(--accent-dim); }
+
+        .row-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            border-radius: 14px;
+            border: none;
+            background: var(--accent);
+            color: #000;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: var(--font);
+            margin-top: 6px;
+            transition: opacity 0.15s;
+        }
+        .btn-primary:active { opacity: 0.8; }
+
+        /* ===== NOTES VIEW ===== */
+        .notes-view {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 600;
+            max-width: 430px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            animation: slide-in-right 0.25s ease;
+        }
+        @keyframes slide-in-right {
+            from { transform: translateX(-30px); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
+        }
+        .notes-header {
+            padding: 54px 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .btn-back {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: var(--font);
+        }
+        .notes-title { font-size: 16px; font-weight: 600; flex: 1; }
+        .notes-meta  { font-size: 12px; color: var(--text-dim); padding: 12px 20px; }
+        textarea.note-area {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            padding: 16px 20px;
+            font-size: 15px;
+            font-family: var(--font);
+            resize: none;
+            outline: none;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+
+        /* ===== NOTIFICATION COLORS by time ===== */
+        .color-now    { color: var(--red); }
+        .color-urgent { color: var(--orange); }
+        .color-soon   { color: var(--blue); }
+        .color-future { color: var(--text); }
+        .color-past   { color: var(--text-muted); }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="root"></div>
+</div>
+
+<script>
+// ===== SERVICE WORKER REGISTRATION =====
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+        console.log('SW registered:', reg.scope);
+    }).catch(err => console.warn('SW failed:', err));
+}
+
+// ===== CONSTANTS =====
+const KEY = 'maweid_v4';
+const SNOOZE_MIN = 5;
+
+// ===== STATE =====
+let appts = [];
+let view = 'list'; // list | add | notes
+let selectedId = null;
+let noteText = '';
+let ringingAppt = null;
+let alarmAudioCtx = null;
+let alarmInterval = null;
+let notifGranted = false;
+let swReady = false;
+
+// ===== STORAGE =====
+function load() {
+    try { appts = JSON.parse(localStorage.getItem(KEY)) || []; } catch { appts = []; }
+}
+function save() {
+    localStorage.setItem(KEY, JSON.stringify(appts));
+}
+
+// ===== TIME HELPERS =====
+function parseTarget(dateStr, timeStr) {
+    return new Date(`${dateStr}T${timeStr}:00`);
+}
+
+function getCountdown(dateStr, timeStr) {
+    const diff = parseTarget(dateStr, timeStr) - Date.now();
+    const abs = Math.abs(diff);
+    const mins = Math.floor(abs / 60000);
+    const hrs  = Math.floor(abs / 3600000);
+    const days = Math.floor(abs / 86400000);
+    return { diff, mins, hrs, days, isPast: diff < 0 };
+}
+
+function formatDate(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('ar-SA', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function getBadge(dateStr, timeStr) {
+    const { diff, mins, hrs, days, isPast } = getCountdown(dateStr, timeStr);
+    if (!isPast && mins === 0) return { main: 'الآن', sub: '', cls: 'color-now', borderColor: 'var(--red)' };
+    if (!isPast && mins <= 15) return { main: mins, sub: 'دقيقة', cls: 'color-urgent', borderColor: 'var(--orange)' };
+    if (!isPast && hrs < 1) return { main: mins, sub: 'دقيقة', cls: 'color-soon', borderColor: 'var(--blue)' };
+    if (!isPast && days < 1) return { main: hrs, sub: 'ساعة', cls: 'color-soon', borderColor: 'var(--blue)' };
+    if (!isPast) return { main: days, sub: 'يوم', cls: 'color-future', borderColor: 'var(--border)' };
+    return { main: days || hrs || mins, sub: days ? 'يوم' : hrs ? 'ساعة' : 'دقيقة', cls: 'color-past', borderColor: 'var(--text-muted)' };
+}
+
+// ===== ALARM SOUND (Phone-ring style: repeating beeps) =====
+function startAlarm() {
+    stopAlarm();
+    playRingCycle();
+    alarmInterval = setInterval(playRingCycle, 3000);
+}
+
+function playRingCycle() {
+    try {
+        if (!alarmAudioCtx || alarmAudioCtx.state === 'closed') {
+            alarmAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (alarmAudioCtx.state === 'suspended') alarmAudioCtx.resume();
+        const ctx = alarmAudioCtx;
+        const t = ctx.currentTime;
+
+        // 3 quick beeps like a phone ring
+        [0, 0.4, 0.8].forEach(offset => {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, t + offset);
+            osc.frequency.linearRampToValueAtTime(900, t + offset + 0.3);
+
+            gain.gain.setValueAtTime(0, t + offset);
+            gain.gain.linearRampToValueAtTime(0.7, t + offset + 0.05);
+            gain.gain.setValueAtTime(0.7, t + offset + 0.2);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + offset + 0.35);
+
+            osc.start(t + offset);
+            osc.stop(t + offset + 0.36);
+        });
+    } catch(e) { console.warn('Audio error:', e); }
+}
+
+function stopAlarm() {
+    if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+    try { if (alarmAudioCtx) { alarmAudioCtx.close(); alarmAudioCtx = null; } } catch {}
+}
+
+// ===== VIBRATE =====
+function vibrate() {
+    if (navigator.vibrate) {
+        navigator.vibrate([400, 200, 400, 200, 400, 500, 400, 200, 400]);
+    }
+}
+
+// ===== NOTIFICATIONS =====
+async function requestNotifPermission() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') { notifGranted = true; return true; }
+    const p = await Notification.requestPermission();
+    notifGranted = p === 'granted';
+    return notifGranted;
+}
+
+function sendNotif(title, body) {
+    if (notifGranted && 'Notification' in window) {
+        new Notification('⏰ ' + title, { body, icon: 'icon-192.png', badge: 'icon-192.png', vibrate: [400, 200, 400] });
+    }
+}
+
+// Sync alarms to SW
+function syncAlarmsToSW() {
+    if (!navigator.serviceWorker.controller) return;
+    navigator.serviceWorker.controller.postMessage({
+        type: 'SYNC_ALARMS',
+        alarms: appts
+            .filter(a => !a.checked)
+            .map(a => ({ id: a.id, title: a.title, date: a.date, time: a.time }))
+    });
+}
+
+// Listen for SW messages
+navigator.serviceWorker && navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data && e.data.type === 'ALARM_TRIGGER') {
+        const a = appts.find(x => x.id === e.data.id);
+        if (a && !a.checked) triggerAlarm(a);
+    }
+});
+
+// ===== CHECK ALARMS (foreground) =====
+const notifiedSet = new Set();
+function checkAlarms() {
+    appts.forEach(appt => {
+        if (appt.checked) return;
+        const { diff, mins } = getCountdown(appt.date, appt.time);
+        const key = appt.id + '-now';
+        if (diff >= 0 && diff < 60000 && !notifiedSet.has(key)) {
+            notifiedSet.add(key);
+            triggerAlarm(appt);
+        }
+    });
+    renderApp();
+}
+
+function triggerAlarm(appt) {
+    ringingAppt = appt;
+    startAlarm();
+    vibrate();
+    sendNotif(appt.title, formatDate(appt.date) + ' - ' + appt.time);
+    renderApp();
+}
+
+function dismissAlarm() {
+    stopAlarm();
+    ringingAppt = null;
+    renderApp();
+}
+
+function snoozeAlarm() {
+    if (!ringingAppt) return;
+    stopAlarm();
+    const appt = ringingAppt;
+    ringingAppt = null;
+    // Set snooze time = now + SNOOZE_MIN
+    const snoozeTime = new Date(Date.now() + SNOOZE_MIN * 60000);
+    const pad = n => String(n).padStart(2, '0');
+    const snoozeDate = `${snoozeTime.getFullYear()}-${pad(snoozeTime.getMonth()+1)}-${pad(snoozeTime.getDate())}`;
+    const snoozeHHMM = `${pad(snoozeTime.getHours())}:${pad(snoozeTime.getMinutes())}`;
+    appts.push({
+        id: Date.now().toString(),
+        title: '💤 ' + appt.title,
+        date: snoozeDate,
+        time: snoozeHHMM,
+        notes: appt.notes || '',
+        checked: false
+    });
+    save();
+    syncAlarmsToSW();
+    renderApp();
+}
+
+// ===== SORT =====
+function getSorted() {
+    return [...appts].sort((a, b) => {
+        if (a.checked !== b.checked) return a.checked ? 1 : -1;
+        return parseTarget(a.date, a.time) - parseTarget(b.date, b.time);
+    });
+}
+
+// ===== CRUD =====
+function addAppt(title, date, time) {
+    if (!title.trim() || !date || !time) return false;
+    appts.push({ id: Date.now().toString(), title: title.trim(), date, time, notes: '', checked: false });
+    save();
+    syncAlarmsToSW();
+    return true;
+}
+
+function toggleDone(id) {
+    appts = appts.map(a => a.id === id ? { ...a, checked: !a.checked } : a);
+    save();
+    syncAlarmsToSW();
+    renderApp();
+}
+
+function deleteAppt(id) {
+    appts = appts.filter(a => a.id !== id);
+    save();
+    syncAlarmsToSW();
+    renderApp();
+}
+
+function saveNote(id, text) {
+    appts = appts.map(a => a.id === id ? { ...a, notes: text } : a);
+    save();
+}
+
+// ===== DEFAULT DATE/TIME =====
+function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function nowTimeStr() {
+    const d = new Date(Date.now() + 60000);
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+// ===== RENDER =====
+function renderApp() {
+    const root = document.getElementById('root');
+
+    // Ringing overlay
+    if (ringingAppt) {
+        root.innerHTML = `
+        <div class="ringing-overlay">
+            <div class="ringing-icon">📳</div>
+            <div class="ringing-title">${esc(ringingAppt.title)}</div>
+            <div class="ringing-time">${formatDate(ringingAppt.date)} · ${ringingAppt.time}</div>
+            <button class="btn-dismiss" onclick="dismissAlarm()">إيقاف الرنين</button>
+            <button class="btn-snooze" onclick="snoozeAlarm()">تأجيل ${SNOOZE_MIN} دقائق 💤</button>
+        </div>`;
+        return;
+    }
+
+    // Notes view
+    if (view === 'notes' && selectedId) {
+        const appt = appts.find(a => a.id === selectedId);
+        if (appt) {
+            root.innerHTML = `
+            <div class="notes-view">
+                <div class="notes-header">
+                    <button class="btn-back" onclick="saveNoteAndBack()">← حفظ</button>
+                    <div class="notes-title">${esc(appt.title)}</div>
+                </div>
+                <div class="notes-meta">${formatDate(appt.date)} · ${appt.time}</div>
+                <textarea class="note-area" id="noteArea" placeholder="أضف ملاحظاتك هنا...">${esc(noteText)}</textarea>
+            </div>`;
+            document.getElementById('noteArea').focus();
+            return;
+        }
+    }
+
+    // Compute status for status bar
+    const pending = appts.filter(a => !a.checked);
+    const upcoming15 = pending.filter(a => { const {diff} = getCountdown(a.date, a.time); return diff >= 0 && diff < 900000; });
+    const statusIcon = notifGranted ? '🔔' : '🔕';
+    const statusText = notifGranted
+        ? (upcoming15.length > 0 ? `${upcoming15.length} موعد خلال 15 دقيقة` : `${pending.length} موعد نشط · الإشعارات مفعّلة`)
+        : 'اضغط لتفعيل التنبيهات والصوت';
+    const dotClass = notifGranted ? (upcoming15.length > 0 ? 'warn' : 'active') : '';
+
+    // Build list
+    const sorted = getSorted();
+    const upcoming = sorted.filter(a => !a.checked);
+    const done     = sorted.filter(a => a.checked);
+
+    let listHTML = '';
+
+    if (upcoming.length === 0 && done.length === 0) {
+        listHTML = `<div class="empty-state">
+            <div class="empty-icon">🗓️</div>
+            <div class="empty-text">لا توجد مواعيد بعد<br><span style="font-size:13px;opacity:0.5">اضغط + لإضافة موعد جديد</span></div>
+        </div>`;
+    } else {
+        if (upcoming.length > 0) {
+            listHTML += `<div class="section-label">القادمة</div>`;
+            listHTML += upcoming.map(a => buildCard(a)).join('');
+        }
+        if (done.length > 0) {
+            listHTML += `<div class="section-label">المنجزة</div>`;
+            listHTML += done.map(a => buildCard(a)).join('');
+        }
+    }
+
+    root.innerHTML = `
+    <div class="header">
+        <div>
+            <div class="header-title">مواعيدي</div>
+            <div class="header-subtitle">${new Date().toLocaleDateString('ar-SA', {weekday:'long', month:'long', day:'numeric'})}</div>
+        </div>
+        <button class="btn-add" onclick="openAdd()">+</button>
+    </div>
+
+    <div class="status-bar" onclick="onStatusClick()">
+        <div style="display:flex;align-items:center;gap:8px">
+            <span>${statusIcon}</span>
+            <span>${statusText}</span>
+        </div>
+        <div class="status-dot ${dotClass}"></div>
+    </div>
+
+    <div class="list">${listHTML}</div>
+
+    ${view === 'add' ? buildAddSheet() : ''}
+    `;
+
+    // Re-attach form submit if sheet open
+    if (view === 'add') {
+        const form = document.getElementById('addForm');
+        if (form) form.addEventListener('keydown', e => { if (e.key === 'Enter') submitAdd(); });
+    }
+}
+
+function buildCard(appt) {
+    const badge = getBadge(appt.date, appt.time);
+    const { diff, mins } = getCountdown(appt.date, appt.time);
+    let cardClass = 'appt-card';
+    if (appt.checked) cardClass += ' past';
+    else if (diff >= 0 && diff < 60000) cardClass += ' ringing';
+    else if (!appt.checked && diff >= 0 && diff < 900000) cardClass += ' soon';
+
+    const notePreview = appt.notes ? `<div class="appt-note-preview">📝 ${esc(appt.notes)}</div>` : '';
+
+    return `
+    <div class="${cardClass}" id="card-${appt.id}">
+        <div class="badge" style="border-color:${badge.borderColor}">
+            <span class="badge-main ${badge.cls}">${badge.main}</span>
+            <span class="badge-sub">${badge.sub}</span>
+        </div>
+        <div class="appt-body" onclick="openNotes('${appt.id}')">
+            <div class="appt-title">${esc(appt.title)}</div>
+            <div class="appt-meta">${formatDate(appt.date)} · ${appt.time}</div>
+            ${notePreview}
+        </div>
+        <div class="appt-actions">
+            <button class="btn-icon ${appt.checked ? 'done' : ''}" onclick="toggleDone('${appt.id}')" title="${appt.checked ? 'إلغاء الإنجاز' : 'تم'}">${appt.checked ? '↩' : '✓'}</button>
+            <button class="btn-icon delete" onclick="confirmDelete('${appt.id}')" title="حذف">✕</button>
+        </div>
+    </div>`;
+}
+
+function buildAddSheet() {
+    return `
+    <div class="sheet-overlay" onclick="closeAdd(event)">
+        <div class="sheet" onclick="event.stopPropagation()">
+            <div class="sheet-handle"></div>
+            <div class="sheet-title">موعد جديد</div>
+            <div id="addForm">
+                <div class="field-label">العنوان</div>
+                <input class="input-field" id="fi-title" placeholder="مثال: اجتماع العمل" autocomplete="off">
+                <div class="field-label">التاريخ</div>
+                <input class="input-field" id="fi-date" type="date" value="${todayStr()}" style="color-scheme:dark">
+                <div class="field-label">الوقت</div>
+                <input class="input-field" id="fi-time" type="time" value="${nowTimeStr()}" style="color-scheme:dark">
+                <button class="btn-primary" onclick="submitAdd()">إضافة الموعد</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+// ===== ACTIONS =====
+function openAdd() {
+    view = 'add';
+    renderApp();
+    setTimeout(() => document.getElementById('fi-title') && document.getElementById('fi-title').focus(), 100);
+}
+function closeAdd(e) { view = 'list'; renderApp(); }
+
+function submitAdd() {
+    const title = document.getElementById('fi-title').value;
+    const date  = document.getElementById('fi-date').value;
+    const time  = document.getElementById('fi-time').value;
+    if (addAppt(title, date, time)) {
+        view = 'list';
+        renderApp();
+    } else {
+        document.getElementById('fi-title').focus();
+        document.getElementById('fi-title').style.borderColor = 'var(--red)';
+    }
+}
+
+function openNotes(id) {
+    selectedId = id;
+    noteText = (appts.find(a => a.id === id) || {}).notes || '';
+    view = 'notes';
+    renderApp();
+}
+
+function saveNoteAndBack() {
+    noteText = (document.getElementById('noteArea') || {}).value || noteText;
+    saveNote(selectedId, noteText);
+    view = 'list';
+    selectedId = null;
+    renderApp();
+}
+
+function confirmDelete(id) {
+    if (confirm('حذف هذا الموعد؟')) { deleteAppt(id); }
+}
+
+async function onStatusClick() {
+    if (!notifGranted) {
+        await requestNotifPermission();
+    }
+    // Play test sound
+    playRingCycle();
+    renderApp();
+}
+
+// ===== UTILS =====
+function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== INIT =====
+async function init() {
+    load();
+    notifGranted = Notification && Notification.permission === 'granted';
+    if (!notifGranted) {
+        // auto-request on first visit
+        notifGranted = await requestNotifPermission();
+    }
+    renderApp();
+    setInterval(checkAlarms, 15000); // Check every 15s
+    checkAlarms(); // immediate
+
+    // SW ready callback
+    if (navigator.serviceWorker) {
+        navigator.serviceWorker.ready.then(() => {
+            swReady = true;
+            syncAlarmsToSW();
+        });
+    }
+}
+
+init();
+</script>
+</body>
+</html>
